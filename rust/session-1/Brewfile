@@ -1,0 +1,4 @@
+tap "dotenvx/brew"
+brew "gum"
+brew "k6"
+brew "dotenvx/brew/dotenvx"

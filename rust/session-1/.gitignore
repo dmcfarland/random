@@ -1,0 +1,4 @@
+/target
+.env
+Brewfile.lock.json
+.DS_Store

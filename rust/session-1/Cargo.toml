@@ -1,0 +1,16 @@
+[package]
+name = "rust-play"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7.7"
+tokio = { version = "1.41.0", features = ["full"] }
+tower = "0.5.1"
+rand = "0.8.5"
+serde = "1.0.188"
+futures = "0.3.28"
+serde_json = "1.0.64"
+
+[dependencies.mongodb]
+version = "3.1.0"
