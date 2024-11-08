@@ -2,8 +2,10 @@
 
 ## Introduction
 
-Make sure rust is installed - https://doc.rust-lang.org/book/ch01-01-installation.html
-Install brewfile - `brew bundle install`
+- Install rust and brewfile
+```
+make setup
+```
 
 Add .env file with
 ```

@@ -1,3 +1,7 @@
+make setup:
+	curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+	brew bundle install
+
 run-mongo:
 	dotenvx run -- cargo run --bin query-mongo
 

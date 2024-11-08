@@ -22,3 +22,8 @@ SET VARIABLE excluded_destinations = ['gb', 'ie'];
 SET VARIABLE bfs_flights = (SELECT generate_flight_url('BFS', getvariable('flight_params')));
 SET VARIABLE dub_flights = (SELECT generate_flight_url('DUB', getvariable('flight_params')));
 ```
+
+Sniff Columns for csv file.
+```
+echo "select Columns FROM sniff_csv('https://raw.githubusercontent.com/ip2location/ip2location-iata-icao/master/iata-icao.csv', ignore_errors=true);" | duckdb --csv
+```
