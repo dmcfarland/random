@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    </head>
+    <body>
+        <button id="downloadCsvButton">Download CSV</button>
+        <button id="downloadExcelButton">Download Excel</button>
+
+        <script>
+            const getDb = async () => {
+                const duckdb = window.duckdbduckdbWasm;
+                // @ts-ignore
+                if (window._db) return window._db;
+                const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+                const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+                const worker_url = URL.createObjectURL(
+                    new Blob([`importScripts("${bundle.mainWorker}");`], {
+                        type: "text/javascript",
+                    }),
+                );
+
+                const worker = new Worker(worker_url);
+                const logger = new duckdb.ConsoleLogger();
+                const db = new duckdb.AsyncDuckDB(logger, worker);
+                await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+                URL.revokeObjectURL(worker_url);
+                window._db = db;
+                return db;
+            };
+        </script>
+        <script type="module">
+            import * as duckdbduckdbWasm from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm";
+            window.duckdbduckdbWasm = duckdbduckdbWasm;
+
+            let conn;
+            let db;
+
+            async function init() {
+                db = await getDb();
+                conn = await db.connect();
+                const stmt = await conn.prepare(
+                    `SELECT v + ? FROM generate_series(0, 10000) AS t(v);`,
+                );
+                console.log((await stmt.query(234)).toArray());
+            }
+
+            async function downloadCSV() {
+                try {
+                    await conn.query(
+                        `COPY (SELECT * from 'http://localhost:8000/sample.parquet') TO 'result.csv' (FORMAT CSV, HEADER)`,
+                    );
+
+                    const csv_buffer = await db.copyFileToBuffer("result.csv");
+
+                    const blob = new Blob([csv_buffer], { type: "text/csv" });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "data.csv";
+                    link.click();
+
+                    URL.revokeObjectURL(link.href);
+                } catch (error) {
+                    console.error("Error downloading CSV:", error);
+                }
+            }
+
+            async function downloadExcelV1_broken() {
+                try {
+                    await conn.query(
+                        `
+						INSTALL spatial;
+						LOAD spatial;
+						COPY (SELECT * from 'http://localhost:8000/sample.parquet')
+									 TO 'result.xlsx' WITH (FORMAT GDAL, DRIVER 'xlsx')`,
+                    );
+
+                    const excel_buffer =
+                        await db.copyFileToBuffer("result.xlsx");
+                    const blob = new Blob([excel_buffer], {
+                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "data.xlsx";
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } catch (error) {
+                    console.error("Error downloading Excel:", error);
+                }
+            }
+
+            async function downloadExcel() {
+                try {
+                    const result = await conn.query(
+                        `SELECT * from 'http://localhost:8000/client.snappy.parquet'`,
+                    );
+
+                    const rows = result.toArray();
+
+                    const data = rows.map((row) => {
+                        const obj = {};
+                        result.schema.fields.forEach((field) => {
+                            const pair = row[field.name];
+                            obj[field.name] = pair;
+                        });
+                        return obj;
+                    });
+
+                    console.log("First row of data:", data[0]);
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                    XLSX.writeFile(wb, "data.xlsx");
+                } catch (error) {
+                    console.error("Error downloading Excel:", error);
+                }
+            }
+
+            init();
+            document
+                .getElementById("downloadCsvButton")
+                .addEventListener("click", downloadCSV);
+            document
+                .getElementById("downloadExcelButton")
+                .addEventListener("click", downloadExcel);
+        </script>
+    </body>
+</html>
