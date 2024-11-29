@@ -12,7 +12,7 @@ serde = "1.0.188"
 futures = "0.3.28"
 serde_json = "1.0.64"
 num = "0.4.0"
-image = "0.13.0"
+image = "0.23.12"
 
 [dependencies.mongodb]
 version = "3.1.0"
